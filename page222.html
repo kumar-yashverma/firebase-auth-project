@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Firebase Auth</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #fff;
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .auth-box {
+      width: 360px;
+      padding: 30px;
+      background: #f9f9f9;
+      border-radius: 12px;
+    }
+    input, button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      font-size: 14px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background-color: black;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    .message {
+      color: red;
+      margin-top: 10px;
+      text-align: center;
+    }
+    .hidden {
+      display: none;
+    }
+    .link {
+      color: blue;
+      cursor: pointer;
+      font-size: 14px;
+      display: block;
+      text-align: center;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="auth-box">
+  <h2 id="form-title">Login</h2>
+
+  <form id="loginForm">
+    <input type="email" id="loginEmail" placeholder="Email" required />
+    <input type="password" id="loginPassword" placeholder="Password" required />
+    <button type="submit">Login</button>
+    <button type="button" onclick="googleLogin()">Login with Google</button>
+    <div class="link" onclick="toggleForm()">Don't have an account? Sign Up</div>
+    <div class="link" onclick="forgotPassword()">Forgot Password?</div>
+    <div class="link" onclick="switchToPhone()">Use Phone Login?</div>
+  </form>
+
+  <form id="signupForm" class="hidden">
+    <input type="email" id="signupEmail" placeholder="Email" required />
+    <input type="password" id="signupPassword" placeholder="Password" required />
+    <button type="submit">Sign Up</button>
+    <div class="link" onclick="toggleForm()">Already have an account? Login</div>
+  </form>
+
+  <form id="phoneForm" class="hidden">
+    <input type="text" id="phoneNumber" placeholder="+91XXXXXXXXXX" required />
+    <button type="button" onclick="sendOTP()">Send OTP</button>
+    <div class="link" onclick="switchToEmail()">Back to Email Login</div>
+  </form>
+
+  <form id="otpForm" class="hidden">
+    <input type="text" id="otpCode" placeholder="Enter OTP" required />
+    <button type="button" onclick="verifyOTP()">Verify OTP</button>
+  </form>
+
+  <div id="sign-in-button"></div>
+
+  <div class="message" id="message"></div>
+</div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDbplwqVGYfZXo-MHq3K2AfaMug7PD7nqE",
+    authDomain: "glory-fusion-28e3f.firebaseapp.com",
+    projectId: "glory-fusion-28e3f",
+    storageBucket: "glory-fusion-28e3f.firebasestorage.app",
+    messagingSenderId: "348505920484",
+    appId: "1:348505920484:web:a7557e8005adc39a3bedf1",
+    measurementId: "G-T9V3B26H23"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  auth.tenantId = "myTenantId1";
+
+  window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('sign-in-button', {
+    size: 'invisible',
+    callback: function(response) {
+      console.log("reCAPTCHA solved");
+    }
+  });
+
+  function showMessage(msg, success = false) {
+    const message = document.getElementById("message");
+    message.style.color = success ? "green" : "red";
+    message.textContent = msg;
+  }
+
+  function toggleForm() {
+    document.getElementById("loginForm").classList.toggle("hidden");
+    document.getElementById("signupForm").classList.toggle("hidden");
+  }
+
+  function switchToPhone() {
+    document.getElementById("loginForm").classList.add("hidden");
+    document.getElementById("phoneForm").classList.remove("hidden");
+  }
+
+  function switchToEmail() {
+    document.getElementById("phoneForm").classList.add("hidden");
+    document.getElementById("otpForm").classList.add("hidden");
+    document.getElementById("loginForm").classList.remove("hidden");
+  }
+
+  // ✅ Login
+  document.getElementById("loginForm").addEventListener("submit", function(e) {
+    e.preventDefault();
+    const email = loginEmail.value;
+    const password = loginPassword.value;
+
+    auth.signInWithEmailAndPassword(email, password)
+      .then(() => {
+        showMessage("Logged in!", true);
+        setTimeout(() => {
+          window.location.href = "deshboard.html";
+        }, 1000);
+      })
+      .catch(err => showMessage(err.message));
+  });
+
+  // ✅ Sign Up
+  document.getElementById("signupForm").addEventListener("submit", function(e) {
+    e.preventDefault();
+    const email = signupEmail.value;
+    const password = signupPassword.value;
+
+    auth.createUserWithEmailAndPassword(email, password)
+      .then(() => showMessage("Account created!", true))
+      .catch(err => showMessage(err.message));
+  });
+
+  // ✅ Google Login
+  function googleLogin() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider)
+      .then(() => {
+        showMessage("Google login successful!", true);
+        setTimeout(() => {
+          window.location.href = "deshboard.html";
+        }, 1000);
+      })
+      .catch(err => showMessage(err.message));
+  }
+
+  // ✅ Forgot Password
+  function forgotPassword() {
+    const email = prompt("Enter your email:");
+    if (email) {
+      auth.sendPasswordResetEmail(email)
+        .then(() => showMessage("Password reset email sent!", true))
+        .catch(err => showMessage(err.message));
+    }
+  }
+
+  // ✅ Phone OTP Send
+  function sendOTP() {
+    const phoneNumber = document.getElementById("phoneNumber").value;
+    const appVerifier = window.recaptchaVerifier;
+
+    auth.signInWithPhoneNumber(phoneNumber, appVerifier)
+      .then((confirmationResult) => {
+        window.confirmationResult = confirmationResult;
+        showMessage("OTP sent!", true);
+        document.getElementById("otpForm").classList.remove("hidden");
+      })
+      .catch((error) => showMessage(error.message));
+  }
+
+  // ✅ Phone OTP Verify
+  function verifyOTP() {
+    const code = document.getElementById("otpCode").value;
+    window.confirmationResult.confirm(code)
+      .then(() => {
+        showMessage("Phone verified!", true);
+        setTimeout(() => {
+          window.location.href = "deshboard.html";
+        }, 1000);
+      })
+      .catch((err) => showMessage("Invalid OTP."));
+  }
+</script>
+
+</body>
+</html>
